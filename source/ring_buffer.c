@@ -2,8 +2,10 @@
 
 #include <string.h>
 #include <stdlib.h>
-
 #include <stdio.h>
+#include <errno.h>
+
+#include <unistd.h>
 
 typedef struct ring_buffer_node {
 	char *data;
@@ -112,6 +114,34 @@ int ring_buffer_enqueue(RingBuffer rb, char *data, size_t size)
 
 	return 0;
 }
+
+int ring_buffer_enqueue_from_nbfd(RingBuffer rb, int fd)
+{
+	size_t remain = get_remain_size(rb->tail, rb->bufsiz);
+
+	if (remain == 0) {
+		RingBufferNode new = create_new_node(rb->bufsiz, rb->head);
+		if (new == NULL)
+			return -1;
+
+		rb->tail->next = new;
+		rb->tail = new;
+	}
+
+	int readlen = read(fd, &rb->tail->dptr[rb->tail->usage], remain);
+	if (readlen == -1) {
+		if (errno == EAGAIN)
+			return 0;
+
+		return -1;
+	}
+
+	rb->tail->usage += readlen;
+	rb->total_usage += readlen;
+
+	return ring_buffer_enqueue_from_nbfd(rb, fd);
+}
+
 
 int ring_buffer_dequeue(RingBuffer rb, char *data, size_t readlen)
 {

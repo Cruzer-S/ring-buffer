@@ -14,6 +14,8 @@ size_t ring_buffer_get_usage(RingBuffer rb);
 int ring_buffer_enqueue(RingBuffer rb, char *data, size_t size);
 int ring_buffer_dequeue(RingBuffer rb, char *data, size_t readlen);
 
+int ring_buffer_enqueue_from_fd(RingBuffer rb, int fd);
+
 void ring_buffer_destroy(RingBuffer rb);
 
 void ring_buffer_print(RingBuffer rb);
